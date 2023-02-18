@@ -628,7 +628,8 @@ if __name__ == '__main__':
 > 参考文献：
 > 
 > [1] Eby, P.J. (2010). PEP 3333 – Python Web Server Gateway Interface v1.0.1. Retrieved February 18, 2023, from https://peps.python.org/pep-3333/.
+> 
 > [2] What is an 'endpoint' in Flask?.(n.d). Retrieved February 18, 2023, from https://stackoverflow.com/questions/19261833/what-is-an-endpoint-in-flask/19262349#19262349.
 >
 >
-> 本文源码：
+> 本文源码：https://github.com/yyywang/flask-docs/blob/main/flask%200.1%20%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB.md
