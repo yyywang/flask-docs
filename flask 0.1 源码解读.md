@@ -2,7 +2,7 @@
 
 执行 `app.run()` 便启动了 Flask 服务，这个服务为什么能够监听 http 请求并做出响应？让我们进入 `run` 函数内部一探究竟。
 
-```python{.line-numbers}
+```python
 def run(self, host='localhost', port=5000, **options):
     from werkzeug import run_simple
     if 'debug' in options:
@@ -14,7 +14,7 @@ def run(self, host='localhost', port=5000, **options):
 
 可以看到，`run` 函数3-6行做了些参数默认值设置，最后将参数传入 `run_simple` 并调用返回，注意，第3个参数是 `Flask` 对象（留意 `Flask` 对象的传递）。`run_simple` 是从 `werkzeug` 导入的。
 
-```python{.line-numbers}
+```python
 def run_simple(hostname, port, application, use_reloader=False,
                use_debugger=False, use_evalex=True,
                extra_files=None, reloader_interval=1, threaded=False,
@@ -45,7 +45,7 @@ def run_simple(hostname, port, application, use_reloader=False,
 1. 构造一个服务：`make_server()`
 2. 启动服务：`.serve_forever()`
 
-```python{.line-numbers}
+```python
 def make_server(host, port, app=None, threaded=False, processes=1,
                 request_handler=None, passthrough_errors=False,
                 ssl_context=None):
@@ -65,7 +65,7 @@ def make_server(host, port, app=None, threaded=False, processes=1,
 
 `make_server()` 返回一个 `BaseWSGIServer` 对象。
 
-```python{.line-numbers}
+```python
 class BaseWSGIServer(HTTPServer, object):
     ...
 
@@ -83,7 +83,7 @@ class BaseWSGIServer(HTTPServer, object):
 
 `BaseServer` 类有一个 `serve_forever` 方法：
 
-```python{.line-numbers}
+```python
 def serve_forever(self, poll_interval=0.5):
     self.__is_shut_down.clear()
     try:
@@ -102,12 +102,12 @@ def serve_forever(self, poll_interval=0.5):
 
 其中有一个 `while` 循环，在不断执行:
 
-```python{.line-numbers}
+```python
 if ready:
     self._handle_request_noblock()
 ```
 
-```python{.line-numbers}
+```python
 def _handle_request_noblock(self):
     ...
     self.process_request(request, client_address)
@@ -122,7 +122,7 @@ def _handle_request_noblock(self):
 
 `while` 程序在不断监听请求，当接收到请求时，实例化 `self.RequestHandlerClass` 来处理请求。这个变量在 `werkzeug.BaseWSGIServer` 的 `__init__` 方法中被赋值（以下第10行）：
 
-```python{.line-numbers}
+```python
 class BaseWSGIServer(HTTPServer, object):
     multithread = False
     multiprocess = False
@@ -137,7 +137,7 @@ class BaseWSGIServer(HTTPServer, object):
 
 默认值为 `werkzeug.WSGIRequestHandler`，这个类最终继承自 `SocketServer.BaseRequestHandler`，也就是说`isinstance(self.RequestHandlerClass, SocketServer.BaseRequestHandler)`。
 
-```python{.line-numbers}
+```python
 class BaseRequestHandler:
 
     def __init__(self, request, client_address, server):
@@ -162,7 +162,7 @@ class BaseRequestHandler:
 
 `SocketServer.BaseRequestHandler` 实例化时调用 `self.handle` 方法。注意，此时 `Flask` 对象存在于 `self.server.app` 中。`werkzeug.WSGIRequestHandler` 将这个方法覆写：
 
-```python{.line-numbers}
+```python
 class WSGIRequestHandler(BaseHTTPRequestHandler, object):
 
     def handle(self):
@@ -194,7 +194,7 @@ class BaseHTTPRequestHandler(object):
 
 覆写的方法调用 `BaseHTTPRequestHandler.handle(self)`，内部调用了 `self.handle_one_request` 方法，最终调用了 `WSGIRequestHandler.run_wsgi` 方法：
 
-```python{.line-numbers}
+```python
 class WSGIRequestHandler(BaseHTTPRequestHandler, object):
 
     def run_wsgi(self):
@@ -226,7 +226,7 @@ class WSGIRequestHandler(BaseHTTPRequestHandler, object):
 
 `run_wsgi` 方法第一行即取出 `Flask` 对象，然后将其传入 `execute` 函数并调用，`execute` 第一行 `application_iter = app(environ, start_response)`，这是在调用 `Flask.__call__` 方法。
 
-```python{.line-numbers}
+```python
 class Flask(object):
 
     def wsgi_app(self, environ, start_response):
@@ -248,7 +248,7 @@ class Flask(object):
 
 Web 服务器把 `environ, start_response` 两个参数传入 `Flask.__call__` 处理，正常处理完后将 `Flask.__call__` 返回的数据写入响应体中。Flask 处理请求其实是接收这两个参数并返回数据。
 
-```python{.line-numbers}
+```python
 class Flask(object):
 
     def __call__(self, environ, start_response):
@@ -282,7 +282,7 @@ FLask 先调用 `Flask.preprocess_request` 处理请求，再调用与 URL 对�
 
 ## 3.1 请求前置处理
 
-```python{.line-numbers}
+```python
 class Flask(object):
 
     def before_request(self, f):
@@ -300,7 +300,7 @@ class Flask(object):
 
 ## 3.2 请求处理
 
-```python{.line-numbers}
+```python
 class Flask(object):
 
     def match_request(self):
@@ -326,7 +326,7 @@ class Flask(object):
 
 `match_request` 中调用的 `_request_ctx_stack.top.url_adapter.match()`，是 `_RequestContext.url_adapter.match()`。
 
-```python{.line-numbers}
+```python
 class _RequestContext(object):
 
     def __init__(self, app, environ):
@@ -338,7 +338,7 @@ class _RequestContext(object):
 
 `MapAdapter.match()` 会根据 URL 与 请求方法（GET、POST 等）（URL、请求方法等信息会从 `environ` 中获取）返回当前请求的 endpoint 与 参数。
 
-```python{.line-numbers}
+```python
 # eg
 >>> urls.match("/downloads/42")
 ('downloads/show', {'id': 42})
@@ -346,7 +346,7 @@ class _RequestContext(object):
 
 在执行 URL 与 endpoint 解析前，需要先添加匹配规则。Flask 如何做的呢？
 
-```python{.line-numbers}
+```python
 from werkzeug.routing import Map, Rule
 
 
@@ -358,7 +358,7 @@ class Flask(object):
 
 `Map` 存储 URL 规则和配置参数，可以通过 `Map.add` 添加 URL 匹配规则。
 
-```python{.line-numbers}
+```python
 class Flask(object):
 
     def add_url_rule(self, rule, endpoint, **options):
@@ -384,7 +384,7 @@ class Flask(object):
 
 异常处理函数通过装饰器 `Flask.errorhandler` 添加，将错误码作为 key，被装饰的函数作为 value，存入 Flask 的属性 `self.error_handlers` 中：
 
-```python{.line-numbers}
+```python
 class Flask(object):
 
     def errorhandler(self, code):
@@ -400,7 +400,7 @@ class Flask(object):
 
 不行，因为 WSGI 规定 application 端必须返回一个可迭代对象[1]。
 
-```python{.line-numbers}
+```python
 class Flask(object):
 
     def make_response(self, rv):
@@ -425,7 +425,7 @@ class Flask(object):
 
 Flask 默认的 `self.response_class` 类继承自 `werkzeug.Response`，这个类的 `__call__` 方法接收 `environ, start_response` 两个参数，并返回一个迭代器。
 
-```python{.line-numbers}
+```python
 class BaseResponse(object):
 
     def __call__(self, environ, start_response):
@@ -442,7 +442,7 @@ class BaseResponse(object):
 
 `self.request_context` 返回 `_RequestContext` 的实例化对象。
 
-```python{.line-numbers}
+```python
 class _RequestContext(object):
 
     def __init__(self, app, environ):
@@ -466,7 +466,7 @@ class _RequestContext(object):
 
 `_request_ctx_stack` 是一个全局变量，是 `LocalStack` 类的对象。
 
-```python{.line-numbers}
+```python
 class LocalStack(object):
 
     def __init__(self):
@@ -511,7 +511,7 @@ class LocalStack(object):
 
 `LocalStack` 在初始化时会创建一个线程锁（`self._lock = allocate_lock()`），`LocalStack.push(obj)` 首先请求加锁，获取到锁后将 `obj` 添加到列表 `self._local.stack`，如果 `self._local` 没有属性 `stack` 则将 `stack` 初始化为空列表，最后释放锁（`self._lock.release()`）。`self._local.stack` 是什么？
 
-```python{.line-numbers}
+```python
 class Local(object):
     __slots__ = ('__storage__', '__lock__')
 
@@ -544,7 +544,7 @@ class Local(object):
 
 在初始化 `self._local.stack` 属性时，`self._local.stack = rv = []` 等同于 `Local.__setattr__(self._local, 'stack', [])`，这里首先加锁，然后获取线程id（`ident = get_ident()`），将线程id作为字典 `self.__storage__` 的键，将 `{'stack': []}` 作为值，即：
 
-```python{.line-numbers}
+```python
 self.__storage__ = {
     "thread1": {
         "stack": []
@@ -562,7 +562,7 @@ self.__storage__ = {
 
 假设 Web 服务器单进程启动，启动2个线程，同一时刻有2个请求进来，每个请求都有对应的 `environ` 数据，如果直接赋值给同一个变量，后一个请求会覆盖前一个请求的数据，因为线程数据是共享的。要如何保存这两个请求的数据？并在需要的时候能正确取出？Flask 的做法是设置一个全局变量 `_request_ctx_stack`，存储数据最终用一个字典 `self.__storage__`，将不同线程的请求数据用线程id作为 key，请求数据存在线程id对应的 `stack` 列表中。
 
-```python{.line-numbers}
+```python
 self.__storage__ = {
     "thread1": {
         "stack": [obj1]
@@ -577,7 +577,7 @@ self.__storage__ = {
 Flask 提供了非常便捷的方式来获取当前请求中的 Flask 对象、请求、session、全局变量等数据：`current_app, request, session, g`。
 
 
-```python{.line-numbers}
+```python
 _request_ctx_stack = LocalStack()
 current_app = LocalProxy(lambda: _request_ctx_stack.top.app)
 request = LocalProxy(lambda: _request_ctx_stack.top.request)
@@ -593,7 +593,7 @@ g = LocalProxy(lambda: _request_ctx_stack.top.g)
 
 回过头看看 Flask 的常见用法：
 
-```python{.line-numbers}
+```python
 from flask import Flask, request, session
 
 
